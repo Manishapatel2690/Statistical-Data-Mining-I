@@ -1,0 +1,101 @@
+#########################################
+##
+## This code performs LDA, QDA, and RDA
+##
+## Created: 10/2014
+## Edited: 10/2020
+#########################################
+
+rm(list = ls())
+#library(MMST)
+library(klaR)  # install.packages("klaR")
+library(MASS)  # install.packages("MASS")
+
+# Set the working directory
+setwd("~/Desktop")
+
+# Load the data
+load('pima.RData')
+head(pima)
+my_pima <- pima[,-8]
+
+cor(my_pima[,1:7])
+
+# Create a test and training dataset
+set.seed(12345)
+train = sample(1:nrow(my_pima), nrow(my_pima)*.66)
+pima_train = my_pima[train, ]
+pima_test = my_pima[-train, ]
+dim(pima_train)
+dim(pima_test)
+
+# Translate the "response" to 0-1 coding, so that 
+# We can eventually calculate the missclassification rate.
+y_true_train <- as.numeric(pima_train$class)-1 #diabetes =0, normal = 1
+y_true_test <- as.numeric(pima_test$class)-1 #diabetes =0, normal = 1
+
+####################################
+## Linear Discriminant Analysis (LDA)
+##
+####################################
+lda.fit <- lda(class~., data = pima_train)
+lda.pred.train <- predict(lda.fit, newdata = pima_train)
+y_hat_train <- as.numeric(lda.pred.train$class)-1
+lda.pred.test <- predict(lda.fit, newdata = pima_test)
+y_hat_test <- as.numeric(lda.pred.test$class)-1
+
+# Compute the error
+lda_train_error <- sum(abs(y_true_train - y_hat_train))/length(y_true_train) # 0.22
+lda_test_error <- sum(abs(y_true_test - y_hat_test))/length(y_true_test)  # 0.17
+lda_train_error
+lda_test_error
+
+####################################
+#   Quadratic Discriminant Analysis
+#
+####################################
+qda.fit <- qda(class ~., data = pima_train)
+qda.pred.train = predict(qda.fit, newdata = pima_train)
+y_hat_train <- as.numeric(qda.pred.train$class)-1
+qda.pred.test = predict(qda.fit, newdata = pima_test)
+y_hat_test <- as.numeric(qda.pred.test$class) - 1
+
+# Compute the error
+qda_train_error <- sum(abs(y_true_train - y_hat_train))/length(y_true_train) 
+qda_test_error <- sum(abs(y_true_test - y_hat_test))/length(y_true_test)
+qda_train_error
+qda_test_error
+
+####################################
+#   Regularized Discriminant Analysis
+#
+####################################
+lda_fit <- rda(class ~., data = pima_train, regularization = c(gamma = 0, lambda = 1))
+qda_fit <- rda(class ~., data = pima_train, regularization = c(gamma = 0, lambda = 0))
+rda_fit <- rda(class ~., data = pima_train, regularization = c(gamma = 0, lambda = .5))
+
+lda_fit$error.rate
+qda_fit$error.rate
+rda_fit$error.rate
+
+my_pred_lda <- predict(lda_fit, pima_test)
+my_pred_qda <- predict(qda_fit, pima_test)
+my_pred_rda <- predict(rda_fit, pima_test)
+
+lda_yhat_test <- as.numeric(my_pred_lda$class)-1
+rda_yhat_test <- as.numeric(my_pred_rda$class)-1
+qda_yhat_test <- as.numeric(my_pred_qda$class)-1
+
+
+lda_te <- sum(abs(y_true_test - lda_yhat_test))/length(y_true_test)
+qda_te <- sum(abs(y_true_test - qda_yhat_test))/length(y_true_test)
+rda_te <- sum(abs(y_true_test - rda_yhat_test))/length(y_true_test)
+
+lda_te 
+qda_te
+rda_te
+
+
+
+
+
